@@ -17,12 +17,12 @@ export const fetchContractABI = async (
     );
   }
 
-  const mainTage = 'main#content';
-  const abiTage = 'div#dividcode div pre#js-copytextarea2';
   let ABI = [];
   try {
     const { data } = await axios.get(url, { timeout: 5000 });
     const $ = cheerio.load(data);
+    const mainTage = 'main#content';
+    const abiTage = 'div#dividcode div pre#js-copytextarea2';
     const item = $(mainTage);
     ABI = [...JSON.parse($(item).find(abiTage).text())];
   } catch {
