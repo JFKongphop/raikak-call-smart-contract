@@ -3,7 +3,7 @@ export const generateUrlContract = (
   chainId: number,
 ): string => {
   switch (chainId) {
-    case 0:
+    case 1:
       return `https://etherscan.io/address/${address}#code`;
     case 5:
       return `https://goerli.etherscan.io/address/${address}#code`;

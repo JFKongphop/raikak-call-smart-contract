@@ -4,17 +4,19 @@ import WalletContext from "./WalletContext";
 
 import type { FC, ReactNode } from "react";
 import type { WalletType } from "@/type/walletType";
+import { chainIdLists } from "@/source/chain";
+import { INetwork } from "@/type/network";
 
 interface IWalletProvider {
   children: ReactNode;
 }
 
-type Provider = ethers.providers.Web3Provider
+type Provider = ethers.providers.Web3Provider;
 
 const WalletProvider: FC<IWalletProvider> = ({ children }) => {
   const [provider, setProvider] = useState<Provider | object>({});
   const [signer, setSigner] = useState<Signer | object>({});
-  const [chainId, setChainId] = useState<number>(0);
+  const [network, setNetwork] = useState<INetwork>({ name: '', id: 0 });
   const [address, setAddress] = useState<string>('');
   const [shortAddress, setShortAddress] = useState<string>('');
 
@@ -25,11 +27,12 @@ const WalletProvider: FC<IWalletProvider> = ({ children }) => {
       const signer = provider.getSigner();
       const { chainId } = await provider.getNetwork();
       const address = await signer.getAddress();
-      const shortAddress = `${address.slice(0,5)}...${address.slice(address.length - 5, address.length)}`
-  
+      const shortAddress = `${address.slice(0,5)}...${address.slice(address.length - 5, address.length)}`;
+      const network = chainIdLists.filter((data) => data.id === chainId)[0];
+
       setProvider(provider);
       setSigner(signer);
-      setChainId(chainId);
+      setNetwork(network);
       setAddress(address);
       setShortAddress(shortAddress);
     }
@@ -37,7 +40,8 @@ const WalletProvider: FC<IWalletProvider> = ({ children }) => {
 
   window.ethereum.on('chainChanged', (chainId) => {
     const id = Number(BigInt(chainId as unknown as string).toString());
-    setChainId(id);
+    const network = chainIdLists.filter((data) => data.id === id)[0];
+    setNetwork(network);
   });
 
   useEffect(() => {
@@ -47,11 +51,10 @@ const WalletProvider: FC<IWalletProvider> = ({ children }) => {
   const value: WalletType = {
     provider,
     signer,
-    chainId,
+    network,
     address,
     shortAddress,
     onConnectWallet: connectWallet,
-    
   }
 
   return (

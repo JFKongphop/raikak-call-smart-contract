@@ -29,11 +29,8 @@ export class AppService {
       const abi = await fetchContractABI(address, chainId);
       this.cacheManager.set(`${address}/${chainId}`, abi, 3600000);
       return abi;
-    } catch {
-      throw new HttpException(
-        'Server is error',
-        HttpStatus.INTERNAL_SERVER_ERROR,
-      );
+    } catch (e) {
+      throw new HttpException(e.response, e.status);
     }
   }
 }

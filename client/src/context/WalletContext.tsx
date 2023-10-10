@@ -4,7 +4,7 @@ import { WalletType } from "@/type/walletType";
 const WalletContext = createContext<WalletType>({
   provider: {},
   signer: {},
-  chainId: 0,
+  network: { name: '', id: 0 },
   address: '',
   shortAddress: '',
   onConnectWallet: () => {}
