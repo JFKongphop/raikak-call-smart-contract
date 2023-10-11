@@ -4,68 +4,95 @@ import { VITE_API_ENDPOINT } from '@/configs/enviroment'
 import ABIRequest from '@/lib/abi-request';
 import axios from 'axios';
 import { AxiosError } from 'axios';
-import { toast } from 'react-toastify';
 import { 
   useEffect, 
   useRef, 
   useState 
 } from 'react'
+import { IAddressData } from '@/type/addressData';
+import ContractCard from '@/components/card/ContractCard';
+import { useForm } from 'react-hook-form';
+import { toastifyConfig } from '@/lib/toastify-config';
+
+interface ISearchCollectionName {
+  collectionName: string;
+}
+
+const defaultValues = {
+  collectionName: ''
+}
 
 const index = () => {
   const [chatBoxHeight, setChatBoxHeight] = useState<number>(0);
   const [openNewRequest, setOpenNewRequest] = useState<boolean>(false);
- 
-  const getAddressContracts = ():string[] => {
-    const myAddress = localStorage.getItem('addressContract');
-    return myAddress ? JSON.parse(myAddress) : [];
-  }
 
-  const ad = getAddressContracts();
-
-  const a = () => {
-    const n = Date.now().toString();
-    ad.push(n)
-    localStorage.setItem('addressContract', JSON.stringify(ad))
-  }
+  const { register, watch } = useForm<ISearchCollectionName>({ defaultValues });
 
   const toggleModalRequest = () => {
     setOpenNewRequest((prevToggle) => !prevToggle);
   }
 
-  const searchABIHandler = async (address: string, chainId: number) => {
+  const myAddress = localStorage.getItem('addressContract');
+  const addressContract: IAddressData[] = myAddress 
+    ? JSON.parse(myAddress)
+    : [];
+  const searchABIHandler = async (
+    address: string, 
+    chainId: number,
+    name: string
+  ) => {
     try {
-      const { data } = await ABIRequest.get(
-        `${VITE_API_ENDPOINT}/${address}/${chainId}`
-      );
-      toggleModalRequest();
+      await ABIRequest.get(`${VITE_API_ENDPOINT}/${address}/${chainId}`);
+      const haveAddress = addressContract.some((data: any) => {
+        if (data.address === address && data.chainId === chainId) {
+          return true;
+        }
+      });
+
+      if (!haveAddress) {
+        addressContract.push({ address, chainId, name });
+        localStorage.setItem(
+          'addressContract', 
+          JSON.stringify(addressContract)
+        );
+
+        toastifyConfig('success', 'Successfully search address');
+        toggleModalRequest();
+      }
+      else toastifyConfig('warning', 'Duplicate Address');
     }
     catch (error) {
       if (axios.isAxiosError(error)) {
         const { response } = error as AxiosError<any>;
-        toast.error(response!.data.message, {
-          style: {
-            background: 'rgb(30,41,59)',
-            fontWeight: 'bold',
-            color: 'white'
-          }
-        })
+        toastifyConfig('error', response!.data.message);
       }
     }
-
   }
 
+  const searchContractHandler = (): IAddressData[] => {
+    return addressContract.filter((region: any) => {
+      return ['name'].some((searchRegions) => {
+        return (
+          region[searchRegions]
+            .toString()
+            .toLowerCase()
+            .indexOf(watch('collectionName').toLowerCase()) > -1
+        );
+      });
+    });
+  };
 
   const chatBoxRef = useRef<any>();
   useEffect(() => {
     if (chatBoxRef.current) {
       const divHeight = chatBoxRef.current.clientHeight;
-      setChatBoxHeight(divHeight)
+      setChatBoxHeight(divHeight);
     }
   }, []);
 
   return (
     <div className="flex flex-row h-full" ref={chatBoxRef}>
-      <ModalSearchABIAddress 
+      <ModalSearchABIAddress
         showModal={openNewRequest}
         setShowModal={setOpenNewRequest}
         buttonAction={searchABIHandler}
@@ -91,16 +118,21 @@ const index = () => {
           </div>
           <input 
             type="text" 
-            name=""
+            {...register('collectionName')}
             className="outline-none p-2 rounded-md text-xs" 
           />
         </div>
         <div 
-          className="h-[90%] flex flex-col gap-3 overflow-y-auto items-start justify-start p-2 pr-1 bg-slate-400"
+          className="h-[90%] flex flex-col gap-3 overflow-y-scroll items-start justify-start p-2 pr-1 bg-slate-400"
         >
           {
-            Array.from({ length: 200 }).map((_, index) => (
-              <div className="h-10 w-full rounded-md bg-slate-600">{index}</div>
+            searchContractHandler().map((data) => (
+              <ContractCard
+                key={data.address}
+                name={data.name}
+                address={data.address}
+                chainId={data.chainId}
+              />
             ))
           }
         </div>
@@ -110,4 +142,4 @@ const index = () => {
   )
 }
 
-export default index
+export default index;

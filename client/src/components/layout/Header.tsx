@@ -38,7 +38,7 @@ const Header: FC<IHeader> = ({ children }) => {
                 </div>
               )
               :
-             (
+              (
                 <p>Network</p>
               )
             }

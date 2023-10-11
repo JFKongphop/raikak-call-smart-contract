@@ -13,14 +13,20 @@ import { chainIdLists } from '@/source/chain';
 interface IModalSearchABIAddress {
   showModal: boolean
   setShowModal: Dispatch<SetStateAction<boolean>>;
-  buttonAction: (address: string ,chainId: number) => void;
+  buttonAction: (
+    address: string ,
+    chainId: number, 
+    collectionName: string
+  ) => void;
 }
 
 interface IFormAddress {
+  collectionName: string;
   address: string;
 }
 
 const defaultValues = {
+  collectionName: '',
   address: ''
 };
 
@@ -33,36 +39,31 @@ const ModalSearchABIAddress: FC<IModalSearchABIAddress> = ({
     name: 'Ethereum Mainnet',
     id: 1
   });
-  const [validAddress, setValidAddress] = useState<boolean>(false);
 
   const { 
     register, 
-    handleSubmit, 
-    watch, 
-    setValue 
+    handleSubmit,
+    reset,
+    formState: { errors, dirtyFields }
   } = useForm<IFormAddress>({ defaultValues });
+
+  const { 
+    address: validAddress, 
+    collectionName: validCollectionName 
+  } = dirtyFields;
+  const formIsValid = validAddress && validCollectionName;
 
   const networkSelector = useCallback((network: INetwork) => {
     setNetwork(network);
   }, [network]);
 
   const searchABIHandler = (data: IFormAddress) => {
-    buttonAction(data.address, network.id);
+    buttonAction(data.address, network.id, data.collectionName);
   }
 
-  const address = watch('address');
   useEffect(() => {
-    if (address.length > 0) {
-      setValidAddress(utils.isAddress(watch('address')));
-    }
-    else {
-      setValidAddress(true);
-    }
-  }, [address]);
-
-  useEffect(() => {
-    setValue('address', '');
-  }, [showModal])
+    reset(defaultValues);
+  }, [showModal]);
 
   return (
     <Transition.Root 
@@ -111,13 +112,35 @@ const ModalSearchABIAddress: FC<IModalSearchABIAddress> = ({
                   </header>
                   <div className="flex flex-col w-full gap-8">
                     <div className="relative flex flex-col w-full gap-2">
+                      <label className="font-medium">Collection Name</label>
+                      <input 
+                        type="text" 
+                        {...register('collectionName', { 
+                          required: 'Invalid collection name'
+                        })}
+                        className={`outline-none px-2 h-10 rounded-md text-md text-slate-800 ${errors.collectionName && 'ring-2 ring-red-500'} `} 
+                      />
+                      {errors.collectionName && 
+                        (
+                          <p 
+                            className="absolute -bottom-6 text-red-500 text-sm"
+                          >
+                            Invalid collection name
+                          </p>
+                        )
+                      }
+                    </div>
+                    <div className="relative flex flex-col w-full gap-2">
                       <label className="font-medium">Contract Address</label>
                       <input 
                         type="text" 
-                        {...register('address', { required: true })}
-                        className={`outline-none px-2 h-10 rounded-md text-md text-slate-800 ${!validAddress && 'ring-2 ring-red-500'} `} 
+                        {...register('address', { 
+                          required: 'Invalid address' ,
+                          validate: (data) => utils.isAddress(data)
+                        })}
+                        className={`outline-none px-2 h-10 rounded-md text-md text-slate-800 ${errors.address && 'ring-2 ring-red-500'}`} 
                       />
-                      {!validAddress && 
+                      {errors.address && 
                         (
                           <p 
                             className="absolute -bottom-6 text-red-500 text-sm"
@@ -157,7 +180,7 @@ const ModalSearchABIAddress: FC<IModalSearchABIAddress> = ({
                             <div className="h-[240px] overflow-y-auto p-2 pr-1">
                               {
                                 chainIdLists.map((data: INetwork) => (
-                                  <Menu.Item>
+                                  <Menu.Item key={data.id}>
                                     {({ active }) => (
                                       <button
                                         onClick={() => networkSelector(data)}
@@ -179,7 +202,7 @@ const ModalSearchABIAddress: FC<IModalSearchABIAddress> = ({
                   <div className="w-full">
                     <ButtonHandler 
                       name={'import'}
-                      status={validAddress && watch('address').length > 0}
+                      status={formIsValid}
                       onHandlerFunction={handleSubmit(searchABIHandler)}
                     />
                   </div>
