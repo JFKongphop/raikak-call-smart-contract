@@ -28,7 +28,7 @@ const Header: FC<IHeader> = ({ children }) => {
         </h1>
         <div className="flex flex-row gap-4">
           <div 
-            className="w-full ring-2 ring-white font-medium rounded-md p-2 h-10 flex items-center justify-center text-white bg-slate-600"
+            className="w-full border-2 border-white font-medium rounded-md p-2 h-10 flex items-center justify-center text-white bg-slate-600"
           >
             {network.id > 0 ?
               (
@@ -44,9 +44,10 @@ const Header: FC<IHeader> = ({ children }) => {
             }
             
           </div>
-          <div className="w-[160px]">
+          <div className="w-[300px]">
             <ButtonHandler 
               name={shortAddress.length > 0 ? shortAddress : 'Connect Wallet'}
+              status={true}
               onHandlerFunction={onConnectWallet}
             />
           </div>

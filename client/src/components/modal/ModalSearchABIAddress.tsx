@@ -1,9 +1,14 @@
-import { Menu, Dialog, Transition } from '@headlessui/react';
-import { FC, Fragment, SetStateAction, Dispatch, useState, useCallback } from 'react';
-import ButtonHandler from '../button/ButtonHandler';
-import { chainIdLists } from '@/source/chain';
-import { INetwork } from '@/type/network';
+import { Fragment, useState, useCallback, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
+import { Menu, Dialog, Transition } from '@headlessui/react';
+import { utils } from 'ethers';
+
+import ButtonHandler from '@/components/button/ButtonHandler';
+
+import type { FC, SetStateAction, Dispatch } from 'react';
+import type { INetwork } from '@/type/network';
+
+import { chainIdLists } from '@/source/chain';
 
 interface IModalSearchABIAddress {
   showModal: boolean
@@ -28,16 +33,36 @@ const ModalSearchABIAddress: FC<IModalSearchABIAddress> = ({
     name: 'Ethereum Mainnet',
     id: 1
   });
+  const [validAddress, setValidAddress] = useState<boolean>(false);
 
-  const { register, handleSubmit, watch } = useForm<IFormAddress>({ defaultValues });
+  const { 
+    register, 
+    handleSubmit, 
+    watch, 
+    setValue 
+  } = useForm<IFormAddress>({ defaultValues });
 
   const networkSelector = useCallback((network: INetwork) => {
     setNetwork(network);
   }, [network]);
 
-  const searchABIHandler = () => {
-    buttonAction(watch('address'), network.id);
+  const searchABIHandler = (data: IFormAddress) => {
+    buttonAction(data.address, network.id);
   }
+
+  const address = watch('address');
+  useEffect(() => {
+    if (address.length > 0) {
+      setValidAddress(utils.isAddress(watch('address')));
+    }
+    else {
+      setValidAddress(true);
+    }
+  }, [address]);
+
+  useEffect(() => {
+    setValue('address', '');
+  }, [showModal])
 
   return (
     <Transition.Root 
@@ -62,7 +87,6 @@ const ModalSearchABIAddress: FC<IModalSearchABIAddress> = ({
             className="fixed inset-0 hidden bg-slate-500 bg-opacity-75 transition-opacity md:block" 
           />
         </Transition.Child>
-
         <div className="fixed inset-0 z-10 overflow-y-auto">
           <div 
             className="flex min-h-full items-stretch justify-center text-center md:items-center md:px-2 lg:px-4"
@@ -82,19 +106,26 @@ const ModalSearchABIAddress: FC<IModalSearchABIAddress> = ({
                 <div 
                   className="flex flex-col gap-10 items-center w-full text-white"
                 >
-                  <header 
-                    className="font-semibold text-2xl"
-                  >
+                  <header className="font-semibold text-2xl">
                     New Request
                   </header>
-                  <div className="flex flex-col w-full gap-6">
-                    <div className="flex flex-col w-full gap-2">
+                  <div className="flex flex-col w-full gap-8">
+                    <div className="relative flex flex-col w-full gap-2">
                       <label className="font-medium">Contract Address</label>
                       <input 
                         type="text" 
                         {...register('address', { required: true })}
-                        className="outline-none px-2 h-10 rounded-md text-md text-slate-800" 
+                        className={`outline-none px-2 h-10 rounded-md text-md text-slate-800 ${!validAddress && 'ring-2 ring-red-500'} `} 
                       />
+                      {!validAddress && 
+                        (
+                          <p 
+                            className="absolute -bottom-6 text-red-500 text-sm"
+                          >
+                            Invalid address
+                          </p>
+                        )
+                      }
                     </div>
                     <div className="flex flex-col w-full gap-2">
                       <label className="font-medium">Chain</label>
@@ -148,7 +179,8 @@ const ModalSearchABIAddress: FC<IModalSearchABIAddress> = ({
                   <div className="w-full">
                     <ButtonHandler 
                       name={'import'}
-                      onHandlerFunction={searchABIHandler}
+                      status={validAddress && watch('address').length > 0}
+                      onHandlerFunction={handleSubmit(searchABIHandler)}
                     />
                   </div>
                 </div>
@@ -162,6 +194,3 @@ const ModalSearchABIAddress: FC<IModalSearchABIAddress> = ({
 };
 
 export default ModalSearchABIAddress;
-
-<div 
-className={`${true && 'bg-slate-200'} flex flex-row justify-between items-center text-md px-4 py-2 w-full font-medium text-slate-800 h-10 rounded-md`}></div>

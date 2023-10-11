@@ -2,6 +2,9 @@ import ButtonHandler from '@/components/button/ButtonHandler';
 import ModalSearchABIAddress from '@/components/modal/ModalSearchABIAddress';
 import { VITE_API_ENDPOINT } from '@/configs/enviroment'
 import ABIRequest from '@/lib/abi-request';
+import axios from 'axios';
+import { AxiosError } from 'axios';
+import { toast } from 'react-toastify';
 import { 
   useEffect, 
   useRef, 
@@ -31,15 +34,24 @@ const index = () => {
 
   const searchABIHandler = async (address: string, chainId: number) => {
     try {
+      const { data } = await ABIRequest.get(
+        `${VITE_API_ENDPOINT}/${address}/${chainId}`
+      );
+      toggleModalRequest();
+    }
+    catch (error) {
+      if (axios.isAxiosError(error)) {
+        const { response } = error as AxiosError<any>;
+        toast.error(response!.data.message, {
+          style: {
+            background: 'rgb(30,41,59)',
+            fontWeight: 'bold',
+            color: 'white'
+          }
+        })
+      }
+    }
 
-    }
-    catch {
-      
-    }
-    const { data } = await ABIRequest.get(
-      `${VITE_API_ENDPOINT}/${address}/${chainId}`
-    );
-    toggleModalRequest();
   }
 
 
@@ -54,7 +66,7 @@ const index = () => {
   return (
     <div className="flex flex-row h-full" ref={chatBoxRef}>
       <ModalSearchABIAddress 
-        showModal={ openNewRequest}
+        showModal={openNewRequest}
         setShowModal={setOpenNewRequest}
         buttonAction={searchABIHandler}
       />
@@ -70,8 +82,9 @@ const index = () => {
           >
             <p>Collections</p>
             <div className="w-[160px]">
-              <ButtonHandler 
+              <ButtonHandler
                 name={'New Request'}
+                status={true}
                 onHandlerFunction={toggleModalRequest}
               />
             </div>
