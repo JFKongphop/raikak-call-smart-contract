@@ -17,7 +17,7 @@ const FunctionContractCard: FC<IFunctionContractCard> = ({
 
   return (
     <div 
-      className="flex flex-row w-full border items-center justify-between rounded-md h-8 py-1 px-2 bg-slate-800 hover:bg-slate-700"
+      className="flex flex-row w-full border items-center justify-between rounded-md h-8 py-1 pr-1 pl-1 bg-slate-800 hover:bg-slate-700"
     >
       <p
         className={`border-2 ${stateMutabilityStatusHandler(method) ? ' border-yellow-500 text-yellow-500': 'border-red-500 text-red-500'} font-medium rounded-md text-xs w-[50px] text-center`}

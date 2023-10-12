@@ -7,7 +7,11 @@ const WalletContext = createContext<WalletType>({
   network: { name: '', id: 0 },
   address: '',
   shortAddress: '',
-  onConnectWallet: () => {}
+  abiCollections: [],
+  onConnectWallet: () => {},
+  onCreateNewCollection: () => {},
+  onUpdateCollection: () => {},
+  onDeleteCollection: () => {},
 });
 
 export default WalletContext;

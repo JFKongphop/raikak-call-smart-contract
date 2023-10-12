@@ -2,11 +2,13 @@ import { VITE_API_ENDPOINT } from '@/configs/enviroment';
 import ABIRequest from '@/lib/abi-request';
 import { ABIElement, FunctionName, IAddressData } from '@/type/addressData';
 import { AxiosResponse } from 'axios';
-import { FC, useCallback, useEffect, useState } from 'react';
+import { FC, useCallback, useContext, useEffect, useState } from 'react';
 import { AiFillFolder, AiFillFolderOpen, AiOutlineEdit } from 'react-icons/ai';
 import { BiTrash } from 'react-icons/bi';
 import ModalEditCollection from '../modal/ModalEditCollection';
 import FunctionContractCard from './FunctionContractCard';
+import WalletContext from '@/context/WalletContext';
+import ModalDeleteCollection from '../modal/ModalDeleteCollection';
 
 interface IContractCard {
   name: string;
@@ -22,12 +24,15 @@ const ContractCard: FC<IContractCard> = ({
 
   const [toggleCard, setToggleCard] = useState<boolean>(false);
   const [toggleEditName, setToggleEditName] = useState<boolean>(false);
+  const [toggleDeleteCard, setToggleDeleteCard] = useState<boolean>(false);
   const [abiElement, setAbiElement] = useState<ABIElement[]>([]);
   const [currentEditCollection, setCurrentEditCollection] = useState<IAddressData>({
     name: '',
     address: '',
     chainId: 0,
   });
+
+  const { abiCollections, onUpdateCollection, onDeleteCollection } = useContext(WalletContext);
 
   const myAddress = localStorage.getItem('addressContract');
   const addressContract: IAddressData[] = myAddress 
@@ -49,6 +54,10 @@ const ContractCard: FC<IContractCard> = ({
       setCurrentEditCollection(collectionEdit);
     }
   }, [toggleEditName]);
+
+  const toggleDeleteCollectionHandler = () => {
+    setToggleDeleteCard((prevtoggle) => !prevtoggle);
+  }
 
   useEffect(() => {
     (async () => {
@@ -78,21 +87,26 @@ const ContractCard: FC<IContractCard> = ({
   });
 
   const editCollectionHandler = (name: string) => {
-    const newCollectionName: IAddressData = {
+    const editedCollectionName: IAddressData = {
       ...currentEditCollection,
       name,
     }
-    const editedCollections: IAddressData[] = addressContract.map(
-      (oldCollection) => 
-        oldCollection.address === currentEditCollection.address 
-          ? newCollectionName 
-          : oldCollection
-    );
 
-    localStorage.setItem(
-      'addressContract', 
-      JSON.stringify(editedCollections)
-    );
+    // console.log(editedCollectionName)
+
+    onUpdateCollection(editedCollectionName);
+    // const editedCollections: IAddressData[] = addressContract.map(
+    //   (oldCollection) => 
+    //     oldCollection.address === currentEditCollection.address 
+    //       ? newCollectionName 
+    //       : oldCollection
+    // );
+
+    // localStorage.setItem(
+    //   'addressContract', 
+    //   JSON.stringify(editedCollections)
+    // );
+
 
     setToggleEditName((prevToggle) => !prevToggle);
   }
@@ -107,9 +121,15 @@ const ContractCard: FC<IContractCard> = ({
     >
       <ModalEditCollection 
         showModal={toggleEditName} 
-        collectionName={'A'} 
+        collection={currentEditCollection} 
         setShowModal={setToggleEditName} 
         buttonAction={editCollectionHandler}        
+      />
+      <ModalDeleteCollection 
+        showModal={toggleDeleteCard}
+        collection={currentEditCollection}
+        setShowModal={setToggleDeleteCard}
+        buttonAction={deleteCollectionHandler}
       />
       <div className="flex flex-row justify-between items-center w-full h-8">
         <div 
@@ -132,7 +152,10 @@ const ContractCard: FC<IContractCard> = ({
           >
             <AiOutlineEdit className="text-xl rounded-sm w-full"/>
           </button>
-          <button className="hover:bg-slate-400/50 h-full w-1/2 rounded-md">
+          <button 
+            className="hover:bg-slate-400/50 h-full w-1/2 rounded-md"
+            onClick={toggleDeleteCollectionHandler}
+          >
             <BiTrash className="text-xl rounded-sm w-full"/>
           </button>
         </div>

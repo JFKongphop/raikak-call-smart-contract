@@ -15,44 +15,19 @@ interface IModalEditCollection {
   buttonAction: (collectionName: string) => void;
 }
 
-interface IFormAddress {
-  collectionName: string;
-}
-
-const ModalEditCollection: FC<IModalEditCollection> = ({
+const ModalDeleteCollection: FC<IModalEditCollection> = ({
   showModal,
   collection,
   setShowModal,
   buttonAction,
 }) => {
-  const { onUpdateCollection } = useContext(WalletContext);
-  const defaultValues = {
-    collectionName: collection.name
-  };
+  const { onDeleteCollection } = useContext(WalletContext);
 
-  const { 
-    register, 
-    handleSubmit,
-    reset,
-    watch,
-    formState: { errors, dirtyFields }
-  } = useForm<IFormAddress>({ defaultValues });
-
-  const formIsValid = dirtyFields.collectionName 
-  || watch('collectionName').length > 0;
-
-  const searchABIHandler = (data: IFormAddress) => {
-    const editedCollectionName: IAddressData = {
-      ...collection,
-      name: data.collectionName
-    }
-    onUpdateCollection(editedCollectionName);
-    setShowModal(false)
+  const deleteCollectionHandler = () => {
+    console.log('de', collection)
+    onDeleteCollection(collection);
+    setShowModal(false);
   }
-
-  useEffect(() => {
-    reset(defaultValues);
-  }, [showModal]);
 
   return (
     <Transition.Root 
@@ -97,34 +72,13 @@ const ModalEditCollection: FC<IModalEditCollection> = ({
                   className="flex flex-col gap-10 items-center w-full text-white"
                 >
                   <header className="font-semibold text-2xl">
-                    Edit Collection Name
+                    Delete Collection
                   </header>
-                  <div className="flex flex-col w-full gap-8">
-                    <div className="relative flex flex-col w-full gap-2">
-                      <label className="font-medium">Collection Name</label>
-                      <input 
-                        type="text" 
-                        {...register('collectionName', { 
-                          required: 'Invalid collection name',
-                        })}
-                        className={`outline-none px-2 h-10 rounded-md text-md text-slate-800 ${errors.collectionName && 'ring-2 ring-red-500'} `} 
-                      />
-                      {errors.collectionName && 
-                        (
-                          <p 
-                            className="absolute -bottom-6 text-red-500 text-sm"
-                          >
-                            Invalid collection name
-                          </p>
-                        )
-                      }
-                    </div>
-                  </div>
                   <div className="w-full">
                     <ButtonHandler 
                       name={'Edit'}
-                      status={formIsValid}
-                      onHandlerFunction={handleSubmit(searchABIHandler)}
+                      status={true}
+                      onHandlerFunction={deleteCollectionHandler}
                     />
                   </div>
                 </div>
@@ -137,4 +91,5 @@ const ModalEditCollection: FC<IModalEditCollection> = ({
   );
 };
 
-export default ModalEditCollection;
+
+export default ModalDeleteCollection

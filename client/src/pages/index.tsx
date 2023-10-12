@@ -5,6 +5,7 @@ import ABIRequest from '@/lib/abi-request';
 import axios from 'axios';
 import { AxiosError } from 'axios';
 import { 
+  useContext,
   useEffect, 
   useRef, 
   useState 
@@ -13,6 +14,7 @@ import { IAddressData } from '@/type/addressData';
 import ContractCard from '@/components/card/ContractCard';
 import { useForm } from 'react-hook-form';
 import { toastifyConfig } from '@/lib/toastify-config';
+import WalletContext from '@/context/WalletContext';
 
 interface ISearchCollectionName {
   collectionName: string;
@@ -32,6 +34,10 @@ const index = () => {
     setOpenNewRequest((prevToggle) => !prevToggle);
   }
 
+  const { abiCollections, onCreateNewCollection } = useContext(WalletContext);
+
+  console.log(abiCollections)
+
   const myAddress = localStorage.getItem('addressContract');
   const addressContract: IAddressData[] = myAddress 
     ? JSON.parse(myAddress)
@@ -50,11 +56,12 @@ const index = () => {
       });
 
       if (!haveAddress) {
-        addressContract.push({ address, chainId, name });
-        localStorage.setItem(
-          'addressContract', 
-          JSON.stringify(addressContract)
-        );
+        // addressContract.push({ address, chainId, name });
+        // localStorage.setItem(
+        //   'addressContract', 
+        //   JSON.stringify(addressContract)
+        // );
+        onCreateNewCollection({ address, chainId, name })
 
         toastifyConfig('success', 'Successfully search address');
         toggleModalRequest();
@@ -70,7 +77,7 @@ const index = () => {
   }
 
   const searchContractHandler = (): IAddressData[] => {
-    return addressContract.filter((region: any) => {
+    return abiCollections.filter((region: any) => {
       return ['name'].some((searchRegions) => {
         return (
           region[searchRegions]
