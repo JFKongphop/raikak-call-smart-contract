@@ -1,4 +1,3 @@
-import { FunctionName } from '@/type/addressData';
 import { FC } from 'react';
 
 interface IFunctionContractCard {

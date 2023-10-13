@@ -1,13 +1,25 @@
-import { useEffect, useReducer, useState } from "react";
-import { Signer, ethers } from "ethers";
-import WalletContext from "./WalletContext";
+import { 
+  useEffect, 
+  useReducer, 
+  useState 
+} from "react";
+import { ethers } from "ethers";
 
-import type { FC, ReactNode } from "react";
-import type { AllowAbiHandleType, WalletType } from "@/type/walletType";
+import WalletContext from "./WalletContext";
 import { chainIdLists } from "@/source/chain";
-import { INetwork } from "@/type/network";
-import { IAddressData } from "@/type/addressData";
-import { setLocalStorage } from "@/utils/localstorage-handler";
+import { 
+  getLocalStorage, 
+  setLocalStorage 
+} from "@/utils/localstorage-handler";
+
+import type { Signer } from "ethers";
+import type { 
+  FC, 
+  ReactNode 
+} from "react";
+import type{ INetwork } from "@/type/network";
+import type { IAddressData } from "@/type/addressData";
+import type { WalletType } from "@/type/walletType";
 
 interface IWalletProvider {
   children: ReactNode;
@@ -15,17 +27,14 @@ interface IWalletProvider {
 
 type Provider = ethers.providers.Web3Provider;
 
-const myAddress = localStorage.getItem('addressContract');
-const addressContract: IAddressData[] = myAddress 
-  ? JSON.parse(myAddress)
-  : [];
+const addressContract: IAddressData[] = getLocalStorage();
 
 type AppActions = {
   type: 'EDIT' | 'ADD' | 'DELETE';
-  payload: IAddressData; // Make the payload optional
+  payload: IAddressData;
 };
 
-function appReducer(state: IAddressData[], action: AppActions): IAddressData[] {
+const abiReducer = (state: IAddressData[], action: AppActions): IAddressData[] => {
   const collectionInput = action.payload;
   switch (action.type) {
     case 'EDIT':      
@@ -40,10 +49,10 @@ function appReducer(state: IAddressData[], action: AppActions): IAddressData[] {
       return editedCollections;
 
     case 'ADD':
-      const newCollection = [...addressContract, collectionInput];
+      const newCollection = [...state, collectionInput];
       setLocalStorage(newCollection);
 
-      return [...state, collectionInput];
+      return newCollection;
 
     case 'DELETE':
       const filteredCollection: IAddressData[] = state.filter(
@@ -64,9 +73,8 @@ const WalletProvider: FC<IWalletProvider> = ({ children }) => {
   const [network, setNetwork] = useState<INetwork>({ name: '', id: 0 });
   const [address, setAddress] = useState<string>('');
   const [shortAddress, setShortAddress] = useState<string>('');
-  // const [abiCollections, setAbiCollections] = useState<IAddressData[]>(addressContract);
 
-  const [abiCollections, dispatchABI] = useReducer(appReducer, addressContract);
+  const [abiCollections, dispatchABI] = useReducer(abiReducer, addressContract);
 
   const connectWallet = async () => {
     if (window.ethereum) {
@@ -86,7 +94,6 @@ const WalletProvider: FC<IWalletProvider> = ({ children }) => {
     }
   }
 
-  // 0x980306e668Fa1E4246e2AC86e06e12B67A5fD087
   const createNewCollectionHandler = (collection: IAddressData) => {
     dispatchABI({ type: 'ADD', payload: collection });
   }
@@ -96,7 +103,6 @@ const WalletProvider: FC<IWalletProvider> = ({ children }) => {
   }
 
   const deleteCollectionHandler = (collection: IAddressData) => {
-    console.log(collection)
     dispatchABI({ type: 'DELETE', payload: collection });
   }
 

@@ -1,14 +1,31 @@
+import { 
+  useCallback, 
+  useContext, 
+  useEffect, 
+  useState 
+} from 'react';
+import { 
+  AiFillFolder, 
+  AiFillFolderOpen, 
+  AiOutlineEdit 
+} from 'react-icons/ai';
+import { BiTrash } from 'react-icons/bi';
+
+import ModalEditCollection from '@/components/modal/ModalEditCollection';
+import FunctionContractCard from '@/components/card/FunctionContractCard';
+import ModalDeleteCollection from '@/components/modal/ModalDeleteCollection';
+import WalletContext from '@/context/WalletContext';
+
 import { VITE_API_ENDPOINT } from '@/configs/enviroment';
 import ABIRequest from '@/lib/abi-request';
-import { ABIElement, FunctionName, IAddressData } from '@/type/addressData';
-import { AxiosResponse } from 'axios';
-import { FC, useCallback, useContext, useEffect, useState } from 'react';
-import { AiFillFolder, AiFillFolderOpen, AiOutlineEdit } from 'react-icons/ai';
-import { BiTrash } from 'react-icons/bi';
-import ModalEditCollection from '../modal/ModalEditCollection';
-import FunctionContractCard from './FunctionContractCard';
-import WalletContext from '@/context/WalletContext';
-import ModalDeleteCollection from '../modal/ModalDeleteCollection';
+
+import type { AxiosResponse } from 'axios';
+import type { FC } from 'react';
+import type { 
+  ABIElement, 
+  FunctionName, 
+  IAddressData 
+} from '@/type/addressData';
 
 interface IContractCard {
   name: string;
@@ -32,12 +49,7 @@ const ContractCard: FC<IContractCard> = ({
     chainId: 0,
   });
 
-  const { abiCollections, onUpdateCollection, onDeleteCollection } = useContext(WalletContext);
-
-  const myAddress = localStorage.getItem('addressContract');
-  const addressContract: IAddressData[] = myAddress 
-    ? JSON.parse(myAddress)
-    : [];
+  const { abiCollections } = useContext(WalletContext);
 
   const toggleCardHandler = useCallback(()=> {
     setToggleCard((prevToggle) => !prevToggle);
@@ -47,17 +59,23 @@ const ContractCard: FC<IContractCard> = ({
     setToggleEditName((prevToggle) => !prevToggle);
 
     if (!toggleEditName) {
-      const collectionEdit = addressContract.filter(
+      const collectionEdit = abiCollections.filter(
         (data) => data.address === address
       )[0];
-      console.log(collectionEdit)
       setCurrentEditCollection(collectionEdit);
     }
   }, [toggleEditName]);
 
-  const toggleDeleteCollectionHandler = () => {
-    setToggleDeleteCard((prevtoggle) => !prevtoggle);
-  }
+  const toggleDeleteCollectionHandler = useCallback(() => {
+    setToggleDeleteCard((prevToggle) => !prevToggle);
+
+    if (!toggleDeleteCard) {
+      const collectionDelete = abiCollections.filter(
+        (data) => data.address === address
+      )[0];
+      setCurrentEditCollection(collectionDelete);
+    }
+  }, [toggleDeleteCard]);
 
   useEffect(() => {
     (async () => {
@@ -83,37 +101,10 @@ const ContractCard: FC<IContractCard> = ({
       pure: 3, 
       view: 3
     };
+
     return methodPriority[a.method] - methodPriority[b.method];
   });
 
-  const editCollectionHandler = (name: string) => {
-    const editedCollectionName: IAddressData = {
-      ...currentEditCollection,
-      name,
-    }
-
-    // console.log(editedCollectionName)
-
-    onUpdateCollection(editedCollectionName);
-    // const editedCollections: IAddressData[] = addressContract.map(
-    //   (oldCollection) => 
-    //     oldCollection.address === currentEditCollection.address 
-    //       ? newCollectionName 
-    //       : oldCollection
-    // );
-
-    // localStorage.setItem(
-    //   'addressContract', 
-    //   JSON.stringify(editedCollections)
-    // );
-
-
-    setToggleEditName((prevToggle) => !prevToggle);
-  }
-
-  const deleteCollectionHandler = (address: string) => {
-
-  }
 
   return (
     <div 
@@ -123,13 +114,11 @@ const ContractCard: FC<IContractCard> = ({
         showModal={toggleEditName} 
         collection={currentEditCollection} 
         setShowModal={setToggleEditName} 
-        buttonAction={editCollectionHandler}        
       />
       <ModalDeleteCollection 
         showModal={toggleDeleteCard}
         collection={currentEditCollection}
         setShowModal={setToggleDeleteCard}
-        buttonAction={deleteCollectionHandler}
       />
       <div className="flex flex-row justify-between items-center w-full h-8">
         <div 
@@ -144,7 +133,6 @@ const ContractCard: FC<IContractCard> = ({
         </div>
         <div 
           className="flex flex-row justify-between items-center gap-2 w-[20%] h-full"
-          onClick={() => console.log('test')}
         >
           <button 
             className="hover:bg-slate-400/50 h-full w-1/2 rounded-md"

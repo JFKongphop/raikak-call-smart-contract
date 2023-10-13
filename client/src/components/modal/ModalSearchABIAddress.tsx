@@ -1,23 +1,41 @@
-import { Fragment, useState, useCallback, useEffect } from 'react';
+import {
+  Fragment, 
+  useState, 
+  useCallback, 
+  useEffect, 
+  useContext 
+} from 'react';
+import { 
+  Menu, 
+  Dialog, 
+  Transition 
+} from '@headlessui/react';
 import { useForm } from 'react-hook-form';
-import { Menu, Dialog, Transition } from '@headlessui/react';
 import { utils } from 'ethers';
+import axios from 'axios';
 
 import ButtonHandler from '@/components/button/ButtonHandler';
-
-import type { FC, SetStateAction, Dispatch } from 'react';
-import type { INetwork } from '@/type/network';
+import WalletContext from '@/context/WalletContext';
 
 import { chainIdLists } from '@/source/chain';
+import ABIRequest from '@/lib/abi-request';
+import { toastifyConfig } from '@/lib/toastify-config';
+import { VITE_API_ENDPOINT } from '@/configs/enviroment';
+
+import type { SubmitHandler } from 'react-hook-form';
+import type { 
+  FC, 
+  SetStateAction, 
+  Dispatch 
+} from 'react';
+import type { INetwork } from '@/type/network';
+import type { AxiosError } from 'axios';
+
+
 
 interface IModalSearchABIAddress {
   showModal: boolean
   setShowModal: Dispatch<SetStateAction<boolean>>;
-  buttonAction: (
-    address: string ,
-    chainId: number, 
-    collectionName: string
-  ) => void;
 }
 
 interface IFormAddress {
@@ -33,13 +51,14 @@ const defaultValues = {
 const ModalSearchABIAddress: FC<IModalSearchABIAddress> = ({
   showModal,
   setShowModal,
-  buttonAction,
 }) => {
   const [network, setNetwork] = useState<INetwork>({
     name: 'Ethereum Mainnet',
     id: 1
   });
 
+  const { abiCollections, onCreateNewCollection } = useContext(WalletContext);
+ 
   const { 
     register, 
     handleSubmit,
@@ -57,8 +76,30 @@ const ModalSearchABIAddress: FC<IModalSearchABIAddress> = ({
     setNetwork(network);
   }, [network]);
 
-  const searchABIHandler = (data: IFormAddress) => {
-    buttonAction(data.address, network.id, data.collectionName);
+  const searchABIHandler: SubmitHandler<IFormAddress> = async (data) => {
+    const { address, collectionName } = data;
+    const chainId = network.id;
+    try {
+      await ABIRequest.get(`${VITE_API_ENDPOINT}/${address}/${chainId}`);
+      const haveAddress = abiCollections.some((data: any) => {
+        if (data.address === address && data.chainId === chainId) {
+          return true;
+        }
+      });
+
+      if (!haveAddress) {
+        onCreateNewCollection({ address, chainId, name: collectionName });
+        toastifyConfig('success', 'Successfully search address');
+        setShowModal(false);
+      }
+      else toastifyConfig('warning', 'Duplicate Address');
+    }
+    catch (error) {
+      if (axios.isAxiosError(error)) {
+        const { response } = error as AxiosError<any>;
+        toastifyConfig('error', response!.data.message);
+      }
+    }
   }
 
   useEffect(() => {
@@ -201,7 +242,7 @@ const ModalSearchABIAddress: FC<IModalSearchABIAddress> = ({
                   </div>
                   <div className="w-full">
                     <ButtonHandler 
-                      name={'import'}
+                      name={'Import'}
                       status={formIsValid}
                       onHandlerFunction={handleSubmit(searchABIHandler)}
                     />

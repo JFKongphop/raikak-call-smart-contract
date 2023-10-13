@@ -1,20 +1,20 @@
 import ButtonHandler from '@/components/button/ButtonHandler';
 import ModalSearchABIAddress from '@/components/modal/ModalSearchABIAddress';
-import { VITE_API_ENDPOINT } from '@/configs/enviroment'
-import ABIRequest from '@/lib/abi-request';
-import axios from 'axios';
-import { AxiosError } from 'axios';
+import ContractCard from '@/components/card/ContractCard';
+
+import WalletContext from '@/context/WalletContext';
+
 import { 
   useContext,
   useEffect, 
   useRef, 
   useState 
-} from 'react'
-import { IAddressData } from '@/type/addressData';
-import ContractCard from '@/components/card/ContractCard';
+} from 'react';
+
 import { useForm } from 'react-hook-form';
-import { toastifyConfig } from '@/lib/toastify-config';
-import WalletContext from '@/context/WalletContext';
+
+import type { IAddressData } from '@/type/addressData';
+
 
 interface ISearchCollectionName {
   collectionName: string;
@@ -34,47 +34,7 @@ const index = () => {
     setOpenNewRequest((prevToggle) => !prevToggle);
   }
 
-  const { abiCollections, onCreateNewCollection } = useContext(WalletContext);
-
-  console.log(abiCollections)
-
-  const myAddress = localStorage.getItem('addressContract');
-  const addressContract: IAddressData[] = myAddress 
-    ? JSON.parse(myAddress)
-    : [];
-  const searchABIHandler = async (
-    address: string, 
-    chainId: number,
-    name: string
-  ) => {
-    try {
-      await ABIRequest.get(`${VITE_API_ENDPOINT}/${address}/${chainId}`);
-      const haveAddress = addressContract.some((data: any) => {
-        if (data.address === address && data.chainId === chainId) {
-          return true;
-        }
-      });
-
-      if (!haveAddress) {
-        // addressContract.push({ address, chainId, name });
-        // localStorage.setItem(
-        //   'addressContract', 
-        //   JSON.stringify(addressContract)
-        // );
-        onCreateNewCollection({ address, chainId, name })
-
-        toastifyConfig('success', 'Successfully search address');
-        toggleModalRequest();
-      }
-      else toastifyConfig('warning', 'Duplicate Address');
-    }
-    catch (error) {
-      if (axios.isAxiosError(error)) {
-        const { response } = error as AxiosError<any>;
-        toastifyConfig('error', response!.data.message);
-      }
-    }
-  }
+  const { abiCollections } = useContext(WalletContext);
 
   const searchContractHandler = (): IAddressData[] => {
     return abiCollections.filter((region: any) => {
@@ -102,7 +62,6 @@ const index = () => {
       <ModalSearchABIAddress
         showModal={openNewRequest}
         setShowModal={setOpenNewRequest}
-        buttonAction={searchABIHandler}
       />
       <div 
         className="w-1/4 ring-2 ring-slate-800 flex flex-col" 

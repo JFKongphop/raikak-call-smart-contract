@@ -1,4 +1,7 @@
-import { ethers, Signer } from 'ethers'
+import { 
+  ethers, 
+  Signer 
+} from 'ethers'
 import { IAddressData } from './addressData';
 
 type Provider = ethers.providers.Web3Provider
@@ -15,5 +18,3 @@ export interface WalletType {
   onUpdateCollection: (collection: IAddressData) => void;
   onDeleteCollection: (collection: IAddressData) => void;
 }
-
-export type AllowAbiHandleType = IAddressData | { address: string, name: string };

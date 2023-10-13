@@ -1,6 +1,6 @@
 import { RouterProvider } from 'react-router-dom';
 import { router } from './router';
-import Header from '@/components/layout/Header';
+import Header from '@/components/layout/Layout';
 import WalletProvider from './context/WalletProvider';
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";

@@ -1,18 +1,28 @@
-import { Fragment, useState, useCallback, useEffect, useContext } from 'react';
+import { 
+  Fragment, 
+  useEffect, 
+  useContext 
+} from 'react';
+import { 
+  Dialog, 
+  Transition 
+} from '@headlessui/react';
 import { useForm } from 'react-hook-form';
-import { Dialog, Transition } from '@headlessui/react';
 
 import ButtonHandler from '@/components/button/ButtonHandler';
-
-import type { FC, SetStateAction, Dispatch } from 'react';
-import { IAddressData } from '@/type/addressData';
 import WalletContext from '@/context/WalletContext';
+
+import type { 
+  FC, 
+  SetStateAction,
+  Dispatch 
+} from 'react';
+import type { IAddressData } from '@/type/addressData';
 
 interface IModalEditCollection {
   showModal: boolean;
   collection: IAddressData;
   setShowModal: Dispatch<SetStateAction<boolean>>;
-  buttonAction: (collectionName: string) => void;
 }
 
 interface IFormAddress {
@@ -23,7 +33,6 @@ const ModalEditCollection: FC<IModalEditCollection> = ({
   showModal,
   collection,
   setShowModal,
-  buttonAction,
 }) => {
   const { onUpdateCollection } = useContext(WalletContext);
   const defaultValues = {
@@ -47,7 +56,7 @@ const ModalEditCollection: FC<IModalEditCollection> = ({
       name: data.collectionName
     }
     onUpdateCollection(editedCollectionName);
-    setShowModal(false)
+    setShowModal(false);
   }
 
   useEffect(() => {

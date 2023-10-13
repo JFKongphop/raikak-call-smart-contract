@@ -1,30 +1,37 @@
-import { Fragment, useState, useCallback, useEffect, useContext } from 'react';
-import { useForm } from 'react-hook-form';
-import { Dialog, Transition } from '@headlessui/react';
+import { 
+  Fragment, 
+  useContext 
+} from 'react';
+import { 
+  Dialog, 
+  Transition 
+} from '@headlessui/react';
 
 import ButtonHandler from '@/components/button/ButtonHandler';
-
-import type { FC, SetStateAction, Dispatch } from 'react';
-import { IAddressData } from '@/type/addressData';
 import WalletContext from '@/context/WalletContext';
+
+import type { 
+  FC, 
+  SetStateAction, 
+  Dispatch 
+} from 'react';
+import type { IAddressData } from '@/type/addressData';
+
 
 interface IModalEditCollection {
   showModal: boolean;
   collection: IAddressData;
   setShowModal: Dispatch<SetStateAction<boolean>>;
-  buttonAction: (collectionName: string) => void;
 }
 
 const ModalDeleteCollection: FC<IModalEditCollection> = ({
   showModal,
   collection,
   setShowModal,
-  buttonAction,
 }) => {
   const { onDeleteCollection } = useContext(WalletContext);
 
-  const deleteCollectionHandler = () => {
-    console.log('de', collection)
+  const deleteCollectionHandler = () => {    
     onDeleteCollection(collection);
     setShowModal(false);
   }
@@ -76,7 +83,7 @@ const ModalDeleteCollection: FC<IModalEditCollection> = ({
                   </header>
                   <div className="w-full">
                     <ButtonHandler 
-                      name={'Edit'}
+                      name={'Delete'}
                       status={true}
                       onHandlerFunction={deleteCollectionHandler}
                     />

@@ -1,5 +1,6 @@
-import WalletContext from '@/context/WalletContext';
 import { useContext } from 'react';
+import WalletContext from '@/context/WalletContext';
+
 import ButtonHandler from '../button/ButtonHandler';
 
 import type { 
@@ -7,11 +8,11 @@ import type {
   ReactNode 
 } from 'react';
 
-interface IHeader {
+interface ILayout {
   children: ReactNode
 }
 
-const Header: FC<IHeader> = ({ children }) => {
+const Layout: FC<ILayout> = ({ children }) => {
   const { 
     shortAddress,
     network,
@@ -61,4 +62,4 @@ const Header: FC<IHeader> = ({ children }) => {
   )
 }
 
-export default Header;
+export default Layout;
