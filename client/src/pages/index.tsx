@@ -5,6 +5,9 @@ import ContractCard from '@/components/card/ContractCard';
 import WalletContext from '@/context/WalletContext';
 
 import { 
+  ChangeEvent,
+  FormEvent,
+  useCallback,
   useContext,
   useEffect, 
   useRef, 
@@ -14,10 +17,15 @@ import {
 import { useForm } from 'react-hook-form';
 
 import type { IAddressData } from '@/type/addressData';
+import { filterChainIdHandler } from '@/utils/filter-chainId';
 
 
 interface ISearchCollectionName {
   collectionName: string;
+}
+
+interface CustomTypeArguments {
+  [key: string]: number | string;
 }
 
 const defaultValues = {
@@ -27,6 +35,38 @@ const defaultValues = {
 const index = () => {
   const [chatBoxHeight, setChatBoxHeight] = useState<number>(0);
   const [openNewRequest, setOpenNewRequest] = useState<boolean>(false);
+  const [paramValues, setParamValues] = useState<CustomTypeArguments>({});
+  const [argumentValues, setArgumentValues] = useState<CustomTypeArguments>({});
+
+  const getArgumentsHandler = useCallback((e: ChangeEvent<HTMLInputElement>) => {
+    setArgumentValues((prevArguments) => {
+      return {
+        ...prevArguments,
+        [e.target.name]: e.target.value 
+      }
+    });
+  }, [argumentValues]);
+
+  const { 
+    network, 
+    contractCollections, 
+    currentCollection, 
+    currentContractAbi 
+  } = useContext(WalletContext);
+
+  const { address, chainId } = currentCollection;
+  const { parameter } = currentContractAbi;
+
+  useEffect(() => {
+    setParamValues({});
+    const paramValues: any = {}
+    parameter.forEach((data) => {
+      paramValues[data.name] = data.type.includes('int') ? 0 : ''
+    });
+
+    setParamValues(paramValues);
+  }, [parameter])
+
 
   const { register, watch } = useForm<ISearchCollectionName>({ defaultValues });
 
@@ -34,10 +74,8 @@ const index = () => {
     setOpenNewRequest((prevToggle) => !prevToggle);
   }
 
-  const { abiCollections } = useContext(WalletContext);
-
   const searchContractHandler = (): IAddressData[] => {
-    return abiCollections.filter((region: any) => {
+    return contractCollections.filter((region: any) => {
       return ['name'].some((searchRegions) => {
         return (
           region[searchRegions]
@@ -103,7 +141,106 @@ const index = () => {
           }
         </div>
       </div>
-      <div className="w-3/4"></div>
+      {
+        chainId > 0 && 
+        (
+          <div className="w-3/4 h-full flex flex-col text-white">
+            <div 
+              className="w-full h-[10%] border-b-2 border-slate-800 flex flex-col p-3 justify-center"
+            >
+              <div className="flex flex-col gap-2">
+                <div className="grid grid-cols-4 h-10 gap-3">
+                  <div 
+                    className="col-span-2 border-2 border-slate-800 bg-slate-700/70 rounded-md py-1 px-2 flex items-center"
+                  >
+                    <p className="">{address}</p>
+                  </div>
+                  <div 
+                    className="col-span-1 border-2 border-slate-800 bg-slate-700/70 rounded-md py-1 px-2 flex items-center"
+                  >
+                    <p>
+                      {network.id === chainId 
+                        ? filterChainIdHandler(chainId) 
+                        : `Please change network`
+                      }
+                    </p>
+                  </div>
+                  <div className="col-span-1">
+                    <ButtonHandler 
+                      name={'Send'} 
+                      status={true}
+                      onHandlerFunction={() => {}}                    
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div className="h-[90%] grid grid-cols-2">
+              <div className="cols-span-1 border-r-2 border-slate-800">
+                <div 
+                  className="w-full h-20 border-b-2 border-slate-800 grid grid-cols-5 text-xl font-medium"
+                >
+                  <div 
+                    className="col-span-2 border-r-2 border-slate-800 h-full flex justify-center items-center p-2"
+                  >
+                    <div 
+                      className="w-full h-full border-2 border-slate-800 rounded-md flex justify-center items-center bg-slate-400 text-slate-800"
+                    >
+                      <p>{currentContractAbi.stateMutability}</p>
+                    </div>
+                  </div>
+                  <div 
+                    className="col-span-3 h-full flex justify-center items-center p-2"
+                  >
+                    <div 
+                      className="w-full h-full border-2 border-slate-800 rounded-md flex justify-center items-center bg-slate-400 text-slate-800"
+                    >
+                      <p>{currentContractAbi.function}</p>
+                    </div>
+                  </div>                  
+                </div>
+                <div className="flex flex-col gap-8 p-4 w-full">
+                  {
+                    parameter.map((param) => (
+                      <div
+                        key={param.name}
+                        className="relative flex flex-col w-full gap-2"
+                      >
+                        <label 
+                          className="font-medium text-xl"
+                        >
+                          {param.name} ({param.type.includes('uint') 
+                            ? 'number' 
+                            : 'text'})
+                        </label>
+                        <input 
+                          type={param.type.includes('int') ? 'number' : 'text'}
+                          placeholder={param.type}
+                          name={param.name}
+                          onChange={getArgumentsHandler}
+                          className={`outline-none px-2 h-10 rounded-md text-md text-slate-800 ring-2 ring-slate-800`}
+                        />
+                      </div>
+                    ))
+                  }
+                </div>
+              </div>
+              <div className="cols-span-1 flex flex-col w-full">
+                <div className="h-20 border-b-2 border-slate-800 p-2">
+                  <div 
+                    className="w-full h-full border-2 border-slate-800 rounded-md flex justify-center items-center bg-slate-400 text-slate-800"
+                  >
+                    <p className="text-xl font-medium">Response</p>
+                  </div>
+                </div>
+              </div>
+
+
+            </div>
+            
+          </div>
+        )
+      }
     </div>
   )
 }

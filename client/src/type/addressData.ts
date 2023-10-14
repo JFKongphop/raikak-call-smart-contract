@@ -21,3 +21,16 @@ export interface FunctionName {
   function: string;
   method: string,
 }
+
+export const initialABIElement: ABIElement = {
+  function: '',
+  parameter: [],
+  stateMutability: '',
+  outputs: ''
+}
+
+export const initialCollection: IAddressData = {
+  name: '',
+  address: '',
+  chainId: 0
+}

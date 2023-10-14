@@ -1,5 +1,6 @@
 import { createContext } from "react";
 import { WalletType } from "@/type/walletType";
+import { IAddressData, initialABIElement, initialCollection } from "@/type/addressData";
 
 const WalletContext = createContext<WalletType>({
   provider: {},
@@ -7,11 +8,15 @@ const WalletContext = createContext<WalletType>({
   network: { name: '', id: 0 },
   address: '',
   shortAddress: '',
-  abiCollections: [],
-  onConnectWallet: () => {},
-  onCreateNewCollection: () => {},
-  onUpdateCollection: () => {},
-  onDeleteCollection: () => {},
+  contractCollections: [],
+  currentContractAbi: initialABIElement,
+  currentCollection: initialCollection,
+  onConnectWallet: () => { },
+  onGetContractAbi: () => { },
+  onGetCollection: () => { },
+  onCreateNewCollection: () => { },
+  onUpdateCollection: () => { },
+  onDeleteCollection: () => { },
 });
 
 export default WalletContext;

@@ -57,7 +57,7 @@ const ModalSearchABIAddress: FC<IModalSearchABIAddress> = ({
     id: 1
   });
 
-  const { abiCollections, onCreateNewCollection } = useContext(WalletContext);
+  const { contractCollections, onCreateNewCollection } = useContext(WalletContext);
  
   const { 
     register, 
@@ -81,7 +81,7 @@ const ModalSearchABIAddress: FC<IModalSearchABIAddress> = ({
     const chainId = network.id;
     try {
       await ABIRequest.get(`${VITE_API_ENDPOINT}/${address}/${chainId}`);
-      const haveAddress = abiCollections.some((data: any) => {
+      const haveAddress = contractCollections.some((data: any) => {
         if (data.address === address && data.chainId === chainId) {
           return true;
         }

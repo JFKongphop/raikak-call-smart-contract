@@ -21,10 +21,12 @@ import ABIRequest from '@/lib/abi-request';
 
 import type { AxiosResponse } from 'axios';
 import type { FC } from 'react';
-import type { 
-  ABIElement, 
-  FunctionName, 
-  IAddressData 
+import { 
+  initialCollection,
+  type ABIElement, 
+  type FunctionName, 
+  type IAddressData, 
+  initialABIElement
 } from '@/type/addressData';
 
 interface IContractCard {
@@ -43,23 +45,27 @@ const ContractCard: FC<IContractCard> = ({
   const [toggleEditName, setToggleEditName] = useState<boolean>(false);
   const [toggleDeleteCard, setToggleDeleteCard] = useState<boolean>(false);
   const [abiElement, setAbiElement] = useState<ABIElement[]>([]);
-  const [currentEditCollection, setCurrentEditCollection] = useState<IAddressData>({
-    name: '',
-    address: '',
-    chainId: 0,
-  });
+  const [currentEditCollection, setCurrentEditCollection] = useState<IAddressData>(initialCollection);
 
-  const { abiCollections } = useContext(WalletContext);
+  const { contractCollections, onGetContractAbi, onGetCollection } = useContext(WalletContext);
 
   const toggleCardHandler = useCallback(()=> {
     setToggleCard((prevToggle) => !prevToggle);
+
+    if (toggleCard) {
+      onGetCollection(initialCollection);
+      onGetContractAbi(initialABIElement);
+    }
+    else {
+      onGetCollection({ address, chainId, name });
+    }
   }, [toggleCard]);
 
   const toggleEditNameHandler = useCallback(()=> {
     setToggleEditName((prevToggle) => !prevToggle);
 
     if (!toggleEditName) {
-      const collectionEdit = abiCollections.filter(
+      const collectionEdit = contractCollections.filter(
         (data) => data.address === address
       )[0];
       setCurrentEditCollection(collectionEdit);
@@ -70,13 +76,20 @@ const ContractCard: FC<IContractCard> = ({
     setToggleDeleteCard((prevToggle) => !prevToggle);
 
     if (!toggleDeleteCard) {
-      const collectionDelete = abiCollections.filter(
+      const collectionDelete = contractCollections.filter(
         (data) => data.address === address
       )[0];
       setCurrentEditCollection(collectionDelete);
     }
   }, [toggleDeleteCard]);
 
+  const getCurrentFunctionHandler = (functionName: string) => {
+    const abiSelectedFunction = abiElement.filter(
+      (abi) => abi.function === functionName
+    )[0];
+    onGetContractAbi(abiSelectedFunction);
+  }
+  
   useEffect(() => {
     (async () => {
       if (toggleCard) {
@@ -158,6 +171,7 @@ const ContractCard: FC<IContractCard> = ({
                   key={data.function}
                   method={data.method}
                   functionName={data.function}
+                  onCurrentFunction={getCurrentFunctionHandler}
                 />
               ))
             }
