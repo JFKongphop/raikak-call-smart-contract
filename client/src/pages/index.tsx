@@ -3,10 +3,10 @@ import ModalSearchABIAddress from '@/components/modal/ModalSearchABIAddress';
 import ContractCard from '@/components/card/ContractCard';
 
 import WalletContext from '@/context/WalletContext';
+import { LoadingOutlined } from '@ant-design/icons';
 
 import { 
   ChangeEvent,
-  FormEvent,
   useCallback,
   useContext,
   useEffect, 
@@ -16,16 +16,21 @@ import {
 
 import { useForm } from 'react-hook-form';
 
-import type { IAddressData } from '@/type/addressData';
+import type { IAddressData, ParameterFunction } from '@/type/addressData';
 import { filterChainIdHandler } from '@/utils/filter-chainId';
+import { CustomTypeArguments, ResponseData, initialResponseData } from '@/type/contract-handle';
+import { sortArguments } from '@/utils/sorting-argument';
+import { checkAddressIndexIsValid } from '@/utils/check-index-address';
+import { checkIntegerIndexIsValid } from '@/utils/check-index-integer';
+import { Signer, ethers, utils } from 'ethers';
+import { checkValidNumber } from '@/utils/check-valid-number';
 
+type Provider = ethers.providers.Web3Provider;
+type Interface =  utils.Interface;
+type Transaction = ethers.providers.TransactionResponse;
 
 interface ISearchCollectionName {
   collectionName: string;
-}
-
-interface CustomTypeArguments {
-  [key: string]: number | string;
 }
 
 const defaultValues = {
@@ -35,8 +40,24 @@ const defaultValues = {
 const index = () => {
   const [chatBoxHeight, setChatBoxHeight] = useState<number>(0);
   const [openNewRequest, setOpenNewRequest] = useState<boolean>(false);
-  const [paramValues, setParamValues] = useState<CustomTypeArguments>({});
   const [argumentValues, setArgumentValues] = useState<CustomTypeArguments>({});
+  const [inputByMsg, setInputByMsg] = useState<number>(0);
+  const [loadingTransaction, setLoadingTransaction] = useState<boolean>(false);
+  const [responseData, setResponseData] = useState<ResponseData>(initialResponseData)
+
+  const { 
+    provider,
+    signer,
+    network, 
+    contractCollections, 
+    currentCollection, 
+    currentContractAbi 
+  } = useContext(WalletContext);
+
+  const { register, watch } = useForm<ISearchCollectionName>({ defaultValues });
+
+  const { address, chainId } = currentCollection;
+  const { parameter } = currentContractAbi;
 
   const getArgumentsHandler = useCallback((e: ChangeEvent<HTMLInputElement>) => {
     setArgumentValues((prevArguments) => {
@@ -47,28 +68,9 @@ const index = () => {
     });
   }, [argumentValues]);
 
-  const { 
-    network, 
-    contractCollections, 
-    currentCollection, 
-    currentContractAbi 
-  } = useContext(WalletContext);
-
-  const { address, chainId } = currentCollection;
-  const { parameter } = currentContractAbi;
-
-  useEffect(() => {
-    setParamValues({});
-    const paramValues: any = {}
-    parameter.forEach((data) => {
-      paramValues[data.name] = data.type.includes('int') ? 0 : ''
-    });
-
-    setParamValues(paramValues);
-  }, [parameter])
-
-
-  const { register, watch } = useForm<ISearchCollectionName>({ defaultValues });
+  const getEtherByMessage = (e: ChangeEvent<HTMLInputElement>) => {
+    setInputByMsg(Number(e.target.value));
+  }
 
   const toggleModalRequest = () => {
     setOpenNewRequest((prevToggle) => !prevToggle);
@@ -94,6 +96,142 @@ const index = () => {
       setChatBoxHeight(divHeight);
     }
   }, []);
+
+  useEffect(() => {
+    setResponseData(initialResponseData);
+  }, [currentContractAbi.function])
+
+  const sendTransactionHandler = async (
+    method: string,
+    params: ParameterFunction[],
+    argumentInputs: CustomTypeArguments,
+    type: string,
+    outputs: string,
+  ) => {
+    setLoadingTransaction(true);
+    const Provider = provider as Provider;
+    const Signer = signer as Signer;
+    const sortedArguments = sortArguments(params, argumentInputs);
+    const someInputUndefied = sortedArguments.some(
+      (argument) => argument === undefined
+    );
+    const parametersType = params.map((param) => param.type);
+
+    if (someInputUndefied) {
+      return setResponseData((prevResponse) => {
+        return {
+          ...prevResponse,
+          message: 'Please fill all inputs'
+        }
+      })
+    }
+
+    if (checkAddressIndexIsValid(sortedArguments, parametersType)) {
+      return setResponseData((prevResponse) => {
+        return {
+          ...prevResponse,
+          message: 'Address is invalid'
+        }
+      })
+    }
+
+    if (checkIntegerIndexIsValid(sortedArguments, parametersType)) {
+      return setResponseData((prevResponse) => {
+        return {
+          ...prevResponse,
+          message: 'Integer is invalid'
+        }
+      })
+    }
+
+    const paramsStructure: string[] = params.map(
+      (param) => `${param.type} ${param.name}`
+    );
+    let paramsInFunction: string = '';
+    if (paramsStructure.length > 0) {
+      paramsInFunction = paramsStructure.join(', ');
+    }
+
+    let transaction: Transaction;
+    if (type === 'view' || type === 'pure') {
+      const ABI = [`function ${method}(${paramsInFunction})`];
+      const iface = new utils.Interface(ABI);
+      const encodeInterface = iface.encodeFunctionData(method, sortedArguments);
+      
+      const response = await Provider.call({
+        to: address,
+        data: encodeInterface,
+      });
+
+      let stringResponse: string = '';
+      console.log(outputs)
+      if (outputs === 'string') {
+        stringResponse = utils.toUtf8String(response).trim();
+      }
+      else if (outputs === 'address') {
+        stringResponse = response;
+      }
+      else {
+        const bigNumber = ethers.BigNumber.from(response);
+        stringResponse = bigNumber.toString();
+      }
+
+      setLoadingTransaction(false);
+      return setResponseData({
+        message: 'Call transaction successfully.',
+        data: stringResponse,
+      });
+    }
+
+    else if (params.length === 0 && type === 'payable') {
+      if (
+        checkValidNumber(inputByMsg) 
+        || Number(inputByMsg)  < 0 
+        || !inputByMsg
+      ) {
+        return setResponseData({
+          message: 'Input ether is invalid',
+
+        });
+      }
+
+      const ABI = [`function ${method}()`];
+      const iface = new utils.Interface(ABI);
+      const encodeInterface = iface.encodeFunctionData(`${method}`);
+
+      transaction = await Signer.sendTransaction({
+        to: address,
+        data: encodeInterface,
+        value: utils.parseEther(inputByMsg.toString())
+      })
+    }
+
+    else {
+      const ABI = [`function ${method}(${paramsInFunction})`];
+      const iface = new utils.Interface(ABI);
+      const encodeInterface = iface.encodeFunctionData(
+        `${method}`, 
+        sortedArguments
+      );
+
+      transaction = await Signer.sendTransaction({
+        to: address,
+        data: encodeInterface,
+      });
+    }
+
+    await transaction.wait();
+    setLoadingTransaction(false);
+    return setResponseData({
+      message: 'Send transaction successfully.',
+      hash: transaction.hash,
+      gasPrice: ethers.BigNumber.from(transaction.gasPrice!._hex).toString()
+    })
+  }
+
+  const focusingFunction: boolean = currentContractAbi.function.length > 0;
+  const connectedWalletStatus = Object.keys(provider).length > 0;
+  const responseKey = Object.keys(responseData) as (keyof ResponseData)[];
 
   return (
     <div className="flex flex-row h-full" ref={chatBoxRef}>
@@ -168,8 +306,16 @@ const index = () => {
                   <div className="col-span-1">
                     <ButtonHandler 
                       name={'Send'} 
-                      status={true}
-                      onHandlerFunction={() => {}}                    
+                      status={connectedWalletStatus}
+                      onHandlerFunction={
+                        () => sendTransactionHandler(
+                          currentContractAbi.function,
+                          currentContractAbi.parameter,
+                          argumentValues,
+                          currentContractAbi.stateMutability,
+                          currentContractAbi.outputs
+                        )
+                      }                    
                     />
                   </div>
                 </div>
@@ -177,28 +323,33 @@ const index = () => {
             </div>
             <div className="h-[90%] grid grid-cols-2">
               <div className="cols-span-1 border-r-2 border-slate-800">
-                <div 
-                  className="w-full h-20 border-b-2 border-slate-800 grid grid-cols-5 text-xl font-medium"
-                >
-                  <div 
-                    className="col-span-2 border-r-2 border-slate-800 h-full flex justify-center items-center p-2"
-                  >
+                {
+                  focusingFunction && 
+                  (
                     <div 
-                      className="w-full h-full border-2 border-slate-800 rounded-md flex justify-center items-center bg-slate-400 text-slate-800"
+                      className="w-full h-[15%] border-b-2 border-slate-800 grid grid-cols-5 text-xl font-medium"
                     >
-                      <p>{currentContractAbi.stateMutability}</p>
+                      <div 
+                        className="col-span-2 border-r-2 border-slate-800 h-full flex justify-center items-center p-2"
+                      >
+                        <div 
+                          className="w-full h-full border-2 border-slate-800 rounded-md flex justify-center items-center bg-slate-400 text-slate-800"
+                        >
+                          <p>{currentContractAbi.stateMutability}</p>
+                        </div>
+                      </div>
+                      <div 
+                        className="col-span-3 h-full flex justify-center items-center p-2"
+                      >
+                        <div 
+                          className="w-full h-full border-2 border-slate-800 rounded-md flex justify-center items-center bg-slate-400 text-slate-800"
+                        >
+                          <p>{currentContractAbi.function}</p>
+                        </div>
+                      </div>                  
                     </div>
-                  </div>
-                  <div 
-                    className="col-span-3 h-full flex justify-center items-center p-2"
-                  >
-                    <div 
-                      className="w-full h-full border-2 border-slate-800 rounded-md flex justify-center items-center bg-slate-400 text-slate-800"
-                    >
-                      <p>{currentContractAbi.function}</p>
-                    </div>
-                  </div>                  
-                </div>
+                  )
+                }
                 <div className="flex flex-col gap-8 p-4 w-full">
                   {
                     parameter.map((param) => (
@@ -209,9 +360,7 @@ const index = () => {
                         <label 
                           className="font-medium text-xl"
                         >
-                          {param.name} ({param.type.includes('uint') 
-                            ? 'number' 
-                            : 'text'})
+                          {param.name}
                         </label>
                         <input 
                           type={param.type.includes('int') ? 'number' : 'text'}
@@ -226,18 +375,65 @@ const index = () => {
                 </div>
               </div>
               <div className="cols-span-1 flex flex-col w-full">
-                <div className="h-20 border-b-2 border-slate-800 p-2">
-                  <div 
-                    className="w-full h-full border-2 border-slate-800 rounded-md flex justify-center items-center bg-slate-400 text-slate-800"
-                  >
-                    <p className="text-xl font-medium">Response</p>
-                  </div>
-                </div>
+                {
+                  currentContractAbi.function.length > 0 && 
+                  (
+                    <>
+                      <div className="h-[15%] border-b-2 border-slate-800 p-2">
+                        <div 
+                          className="w-full h-full border-2 border-slate-800 rounded-md flex justify-center items-center bg-slate-400 text-slate-800"
+                        >
+                          <p className="text-xl font-medium">Response</p>
+                        </div>
+                      </div>
+                      <div 
+                        className="h-[85%] w-full py-2 px-4"
+                      >
+                        {
+                          loadingTransaction ?
+                          (
+                            <div
+                              className="flex flex-col justify-center h-full items-center gap-2 font-medium text-slate-800"
+                            >
+                              <LoadingOutlined
+                                style={{
+                                  fontSize: 100,
+                                  color: 'rgb(30,41,59)'
+                                }}
+                                spin
+                                rev={undefined}
+                              />
+                              <p>Loading...</p>
+                            </div>
+                          )
+                          :
+                          (
+                            <div className="w-full h-auto">
+                              {responseKey.map((key) => {
+                                if (responseData[key]) {
+                                  return (
+                                    <div 
+                                      className="flex flex-row items-center gap-2 h-auto w-full whitespace-normal"
+                                    >
+                                      <p className="font-medium">{key}: </p>
+                                      <p 
+                                        className="whitespace-normal"
+                                      >
+                                        {responseData[key]}
+                                      </p>
+                                    </div>
+                                  );
+                                }
+                              })}
+                            </div>
+                          )
+                        }
+                      </div>
+                    </>
+                  )
+                }
               </div>
-
-
             </div>
-            
           </div>
         )
       }

@@ -3,7 +3,7 @@ import type { FC } from 'react';
 interface IButtonHandler {
   name: string;
   status?: boolean;
-  onHandlerFunction: () => void;
+  onHandlerFunction: () => any;
 }
 
 const ButtonHandler: FC<IButtonHandler> = ({

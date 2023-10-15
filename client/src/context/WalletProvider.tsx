@@ -80,8 +80,9 @@ const WalletProvider: FC<IWalletProvider> = ({ children }) => {
 
   const connectWallet = async () => {
     if (window.ethereum) {
-      const provider = new ethers.providers.Web3Provider(window.ethereum);
+      const provider: Provider = new ethers.providers.Web3Provider(window.ethereum);
       await provider.send("eth_requestAccounts", []);
+      
       const signer = provider.getSigner();
       const { chainId } = await provider.getNetwork();
       const address = await signer.getAddress();
