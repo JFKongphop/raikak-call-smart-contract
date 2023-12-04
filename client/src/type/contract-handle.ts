@@ -1,5 +1,3 @@
-import { BigNumber } from "ethers";
-
 export interface CustomTypeArguments {
   [key: string]: number | string;
 }
@@ -16,4 +14,8 @@ export const initialResponseData: ResponseData = {
   data: '',
   hash: '',
   gasPrice: ''
+}
+
+export interface ISearchCollectionName {
+  collectionName: string;
 }

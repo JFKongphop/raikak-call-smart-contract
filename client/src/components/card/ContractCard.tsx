@@ -28,6 +28,7 @@ import {
   type IAddressData, 
   initialABIElement
 } from '@/type/addressData';
+import { LoadingOutlined } from '@ant-design/icons';
 
 interface IContractCard {
   name: string;
@@ -46,6 +47,7 @@ const ContractCard: FC<IContractCard> = ({
   const [toggleDeleteCard, setToggleDeleteCard] = useState<boolean>(false);
   const [abiElement, setAbiElement] = useState<ABIElement[]>([]);
   const [currentEditCollection, setCurrentEditCollection] = useState<IAddressData>(initialCollection);
+  const [loadingAbi, setLoadingAbi] = useState<boolean>(false);
 
   const { contractCollections, onGetContractAbi, onGetCollection } = useContext(WalletContext);
 
@@ -93,10 +95,12 @@ const ContractCard: FC<IContractCard> = ({
   useEffect(() => {
     (async () => {
       if (toggleCard) {
+        setLoadingAbi(true);
         const { data }: AxiosResponse<ABIElement[]> = await ABIRequest.get(
           `${VITE_API_ENDPOINT}/${address}/${chainId}`
         );
         setAbiElement(data);
+        setLoadingAbi(false);
       }
       else setAbiElement([]);
     })();
@@ -162,20 +166,43 @@ const ContractCard: FC<IContractCard> = ({
         </div>
       </div>
       {
-        abiElement.length > 0 &&
+        loadingAbi ?
         (
-          <div className="flex flex-col gap-1 w-full">
-            {
-              functionName.map((data) => (
-                <FunctionContractCard
-                  key={data.function}
-                  method={data.method}
-                  functionName={data.function}
-                  onCurrentFunction={getCurrentFunctionHandler}
-                />
-              ))
-            }
+          <div
+            className="flex flex-row justify-center h-full items-center gap-2 font-medium white"
+          >
+            <LoadingOutlined
+              style={{
+                fontSize: 20,
+                color: 'white'
+              }}
+              spin
+              rev={undefined}
+            />
+            <p>Loading...</p>
           </div>
+        )
+        :
+        (
+          <>
+            {
+              abiElement.length > 0 &&
+              (
+                <div className="flex flex-col gap-1 w-full">
+                  {
+                    functionName.map((data) => (
+                      <FunctionContractCard
+                        key={data.function}
+                        method={data.method}
+                        functionName={data.function}
+                        onCurrentFunction={getCurrentFunctionHandler}
+                      />
+                    ))
+                  }
+                </div>
+              )
+            }
+          </>
         )
       }
     </div>

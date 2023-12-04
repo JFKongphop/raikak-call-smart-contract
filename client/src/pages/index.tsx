@@ -1,6 +1,4 @@
 import ButtonHandler from '@/components/button/ButtonHandler';
-import ModalSearchABIAddress from '@/components/modal/ModalSearchABIAddress';
-import ContractCard from '@/components/card/ContractCard';
 
 import WalletContext from '@/context/WalletContext';
 import { LoadingOutlined } from '@ant-design/icons';
@@ -16,22 +14,21 @@ import {
 
 import { useForm } from 'react-hook-form';
 
-import type { IAddressData, ParameterFunction } from '@/type/addressData';
+import type { ParameterFunction } from '@/type/addressData';
 import { filterChainIdHandler } from '@/utils/filter-chainId';
-import { CustomTypeArguments, ResponseData, initialResponseData } from '@/type/contract-handle';
+import { CustomTypeArguments, ISearchCollectionName, ResponseData, initialResponseData } from '@/type/contract-handle';
 import { sortArguments } from '@/utils/sorting-argument';
 import { checkAddressIndexIsValid } from '@/utils/check-index-address';
 import { checkIntegerIndexIsValid } from '@/utils/check-index-integer';
 import { Signer, ethers, utils } from 'ethers';
 import { checkValidNumber } from '@/utils/check-valid-number';
+import SideBarCollection from '@/components/sidebar/SideBarCollection';
+import { RegisterProps, WatchProps } from '@/type/cutom-type-hook-form';
+import ArgumentInput from '@/components/input/ArgumentInput';
 
 type Provider = ethers.providers.Web3Provider;
-type Interface =  utils.Interface;
 type Transaction = ethers.providers.TransactionResponse;
 
-interface ISearchCollectionName {
-  collectionName: string;
-}
 
 const defaultValues = {
   collectionName: ''
@@ -48,13 +45,14 @@ const index = () => {
   const { 
     provider,
     signer,
-    network, 
-    contractCollections, 
+    network,
     currentCollection, 
     currentContractAbi 
   } = useContext(WalletContext);
 
   const { register, watch } = useForm<ISearchCollectionName>({ defaultValues });
+  const registerProps = register as RegisterProps<ISearchCollectionName>
+  const watchProps = watch as WatchProps<ISearchCollectionName>
 
   const { address, chainId } = currentCollection;
   const { parameter } = currentContractAbi;
@@ -71,23 +69,6 @@ const index = () => {
   const getEtherByMessage = (e: ChangeEvent<HTMLInputElement>) => {
     setInputByMsg(Number(e.target.value));
   }
-
-  const toggleModalRequest = () => {
-    setOpenNewRequest((prevToggle) => !prevToggle);
-  }
-
-  const searchContractHandler = (): IAddressData[] => {
-    return contractCollections.filter((region: any) => {
-      return ['name'].some((searchRegions) => {
-        return (
-          region[searchRegions]
-            .toString()
-            .toLowerCase()
-            .indexOf(watch('collectionName').toLowerCase()) > -1
-        );
-      });
-    });
-  };
 
   const chatBoxRef = useRef<any>();
   useEffect(() => {
@@ -230,54 +211,19 @@ const index = () => {
   }
 
   const focusingFunction: boolean = currentContractAbi.function.length > 0;
-  const connectedWalletStatus = Object.keys(provider).length > 0;
+  const connectedWalletStatus = Object.keys(provider).length > 0 && currentContractAbi.function.length > 0;
   const responseKey = Object.keys(responseData) as (keyof ResponseData)[];
 
   return (
     <div className="flex flex-row h-full" ref={chatBoxRef}>
-      <ModalSearchABIAddress
-        showModal={openNewRequest}
-        setShowModal={setOpenNewRequest}
-      />
       <div 
         className="w-1/4 ring-2 ring-slate-800 flex flex-col" 
         style={{ height: chatBoxHeight }} 
       >
-        <div 
-          className="h-auto w-full bg-slate-600 flex flex-col justify-center px-2 pt-4 pb-3 gap-4 border-b-2 border-slate-800"
-        >
-          <div 
-            className="w-full flex flex-row justify-between items-center font-medium text-md text-white"
-          >
-            <p>Collections</p>
-            <div className="w-[160px]">
-              <ButtonHandler
-                name={'New Request'}
-                status={true}
-                onHandlerFunction={toggleModalRequest}
-              />
-            </div>
-          </div>
-          <input 
-            type="text" 
-            {...register('collectionName')}
-            className="outline-none p-2 rounded-md text-xs" 
-          />
-        </div>
-        <div 
-          className="h-[90%] flex flex-col gap-3 overflow-y-scroll items-start justify-start p-2 pr-1 bg-slate-400"
-        >
-          {
-            searchContractHandler().map((data) => (
-              <ContractCard
-                key={data.address}
-                name={data.name}
-                address={data.address}
-                chainId={data.chainId}
-              />
-            ))
-          }
-        </div>
+        <SideBarCollection 
+          register={registerProps}
+          watch={watchProps}
+        />
       </div>
       {
         chainId > 0 && 
@@ -304,7 +250,7 @@ const index = () => {
                     </p>
                   </div>
                   <div className="col-span-1">
-                    <ButtonHandler 
+                    <ButtonHandler
                       name={'Send'} 
                       status={connectedWalletStatus}
                       onHandlerFunction={
@@ -322,10 +268,10 @@ const index = () => {
               </div>
             </div>
             <div className="h-[90%] grid grid-cols-2">
-              <div className="cols-span-1 border-r-2 border-slate-800">
-                {
-                  focusingFunction && 
-                  (
+              {
+                focusingFunction &&
+                (
+                  <div className="cols-span-1 border-r-2 border-slate-800">
                     <div 
                       className="w-full h-[15%] border-b-2 border-slate-800 grid grid-cols-5 text-xl font-medium"
                     >
@@ -348,32 +294,20 @@ const index = () => {
                         </div>
                       </div>                  
                     </div>
-                  )
-                }
-                <div className="flex flex-col gap-8 p-4 w-full">
-                  {
-                    parameter.map((param) => (
-                      <div
-                        key={param.name}
-                        className="relative flex flex-col w-full gap-2"
-                      >
-                        <label 
-                          className="font-medium text-xl"
-                        >
-                          {param.name}
-                        </label>
-                        <input 
-                          type={param.type.includes('int') ? 'number' : 'text'}
-                          placeholder={param.type}
-                          name={param.name}
-                          onChange={getArgumentsHandler}
-                          className={`outline-none px-2 h-10 rounded-md text-md text-slate-800 ring-2 ring-slate-800`}
-                        />
-                      </div>
-                    ))
-                  }
-                </div>
-              </div>
+                    <div className="flex flex-col gap-8 p-4 w-full">
+                      {
+                        parameter.map((param) => (
+                          <ArgumentInput 
+                            name={param.name}
+                            type={param.type}
+                            onGetArgumentValues={getArgumentsHandler}
+                          />
+                        ))
+                      }
+                    </div>
+                  </div>
+                )
+              }
               <div className="cols-span-1 flex flex-col w-full">
                 {
                   currentContractAbi.function.length > 0 && 
