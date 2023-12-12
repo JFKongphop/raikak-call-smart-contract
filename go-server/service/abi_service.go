@@ -30,6 +30,7 @@ func (s abiService) GetAbi(chainId int, address string) (fiber.Map, error) {
 	if abiCached, err := s.redisClient.Get(context.Background(), key).Result(); err == nil {
 		if json.Unmarshal([]byte(abiCached), &abi) == nil {
 			if json.Unmarshal([]byte(abi), &abiJson) == nil {
+				fmt.Println("redis")
 				return fiber.Map{
 					"message": "fetch abi successfully",
 					"abi": abiJson,
@@ -53,6 +54,7 @@ func (s abiService) GetAbi(chainId int, address string) (fiber.Map, error) {
 	if err != nil {
 		return nil, err
 	}
+	fmt.Println("fetch")
 	
 	return fiber.Map{
 		"message": "fetch abi successfully",
