@@ -15,8 +15,15 @@ func NewAbiHandler(abiSrv service.AbiService) abiHandler {
 }
 
 func (h abiHandler) GetAbi(c *fiber.Ctx) error {
-	// chainId := c.QueryInt("chain-id")
-	// address := c.Query("address")
+	chainId := c.QueryInt("chain-id")
+	address := c.Query("address")
 
-	return nil
+	abiJson, err := h.abiSrv.GetAbi(chainId, address)
+	if err != nil {
+		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
+			"message": err,
+		})
+	}
+
+	return  c.Status(fiber.StatusOK).JSON(abiJson)
 } 
