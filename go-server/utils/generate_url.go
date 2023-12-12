@@ -1,9 +1,6 @@
 package utils
 
-import (
-	"errors"
-	"fmt"
-)
+import "fmt"
 
 func GenerateURL(chainId int, address string) (string, error) {
 	switch chainId {
@@ -26,6 +23,6 @@ func GenerateURL(chainId int, address string) (string, error) {
 	case 42161:
 		return fmt.Sprintf("https://arbiscan.io/address/%s#code", address), nil
 	default:
-		return "", errors.New("chain id not found")
+		return "", ErrChainNotFound
 	}
 }

@@ -1,9 +1,6 @@
 package utils
 
-import (
-	"errors"
-	"strings"
-)
+import "strings"
 
 func FetchABI(htmlResponse string) (string, error) {
 	wordStart := `<pre class="wordwrap js-copytextarea2 scrollbar-custom" id="js-copytextarea2" style="height: 200px; max-height: 400px; margin-top: 5px;">`
@@ -12,11 +9,11 @@ func FetchABI(htmlResponse string) (string, error) {
 	stopAbiIndex := strings.Index(htmlResponse, wordStop)
 
 	if startAbiIndex < 0 || stopAbiIndex < 0 {
-		return "", errors.New("abi not found")
+		return "", ErrABINotFound
 	}
 
 	abiString := strings.Replace(
-		htmlResponse[startAbiIndex: stopAbiIndex], wordStart, 
+		htmlResponse[startAbiIndex:stopAbiIndex], wordStart,
 		"",
 		1,
 	)
