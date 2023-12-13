@@ -9,6 +9,7 @@ import (
 
 func TestGetAbi(t *testing.T) {
 	abiRepo := repository.NewAbiRepositoryFetching()
+
 	succeccCase := repository.SuccessGetAbiCase
 	t.Run(succeccCase.Name, func(t *testing.T) {
 		abiString, _ := abiRepo.GetAbi(succeccCase.ChainId, succeccCase.Address)

@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"fmt"
 	"go-server/service"
 
 	"github.com/gofiber/fiber/v2"
@@ -19,9 +20,10 @@ func (h abiHandler) GetAbi(c *fiber.Ctx) error {
 	address := c.Query("address")
 
 	abiJson, err := h.abiSrv.GetAbi(chainId, address)
+	fmt.Println(err)
 	if err != nil {
 		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
-			"message": err,
+			"message": err.Error() ,
 		})
 	}
 

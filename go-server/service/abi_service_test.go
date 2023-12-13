@@ -16,6 +16,7 @@ func TestGetAbi(t *testing.T) {
 	chainId := service.ServiceTestCase.ChainId
 	address := service.ServiceTestCase.Address
 	expectedAbi := service.ExpectedAbi
+
 	t.Run("found abi in service", func(t *testing.T) {
 		// Arrang
 		abiRepo := repository.NewAbiRepositoryMock()
