@@ -1,18 +1,19 @@
 package main
 
 import (
-	// "fmt"
 	"go-server/handler"
+	"go-server/redis"
 	"go-server/repository"
 	"go-server/service"
 
 	"github.com/gofiber/fiber/v2"
-	"github.com/redis/go-redis/v9"
+	"github.com/gofiber/fiber/v2/middleware/logger"
 )
 
 func main() {
-	redisClient := initRedis()
+	redisClient := redis.InitRedis()
 	app := fiber.New(); _ = app
+	app.Use(logger.New())
 
 	abiRepository := repository.NewAbiRepositoryFetching()
 	abiService := service.NewAbiService(abiRepository, redisClient)
@@ -22,10 +23,4 @@ func main() {
 	app.Get("/search-abi", abiHandler.GetAbi)
 
 	app.Listen(":4000")
-}
-
-func initRedis() *redis.Client {
-	return redis.NewClient(&redis.Options{
-		Addr: "localhost:6379",
-	})
 }

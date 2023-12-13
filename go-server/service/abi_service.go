@@ -4,10 +4,10 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"go-server/logs"
 	"go-server/repository"
 	"time"
 
-	"github.com/gofiber/fiber/v2"
 	"github.com/redis/go-redis/v9"
 )
 
@@ -20,21 +20,16 @@ func NewAbiService(abiRepo repository.AbiRepository, redisClient *redis.Client) 
 	return abiService{abiRepo, redisClient}
 }
 
-func (s abiService) GetAbi(chainId int, address string) (fiber.Map, error) {
+func (s abiService) GetAbi(chainId int, address string) (abiJson []map[string]interface{}, err error) {
 	key := fmt.Sprintf("%v::%v", chainId, address)
 	// 5::0x980306e668Fa1E4246e2AC86e06e12B67A5fD087
 
 	// GET
 	var abi string
-	abiJson := []map[string]interface{}{}
 	if abiCached, err := s.redisClient.Get(context.Background(), key).Result(); err == nil {
 		if json.Unmarshal([]byte(abiCached), &abi) == nil {
 			if json.Unmarshal([]byte(abi), &abiJson) == nil {
-				fmt.Println("redis")
-				return fiber.Map{
-					"message": "fetch abi successfully",
-					"abi": abiJson,
-				}, nil
+				return abiJson, nil
 			}
 		}
 	}
@@ -42,6 +37,7 @@ func (s abiService) GetAbi(chainId int, address string) (fiber.Map, error) {
 	// REPOSITORY
 	abiString, err := s.abiRepo.GetAbi(chainId, address)
 	if err != nil {
+		logs.Error(err)
 		return nil, err
 	}
 
@@ -52,12 +48,9 @@ func (s abiService) GetAbi(chainId int, address string) (fiber.Map, error) {
 
 	err = json.Unmarshal([]byte(abiString), &abiJson)
 	if err != nil {
+		logs.Error(err)
 		return nil, err
 	}
-	fmt.Println("fetch")
 	
-	return fiber.Map{
-		"message": "fetch abi successfully",
-		"abi": abiJson,
-	}, nil
+	return abiJson, nil
 }

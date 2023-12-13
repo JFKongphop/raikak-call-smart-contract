@@ -1,7 +1,6 @@
 package utils_test
 
 import (
-	"fmt"
 	"go-server/utils"
 	"testing"
 
@@ -21,7 +20,6 @@ func TestGenerateURL(t *testing.T) {
 	errorCase := utils.GenerateURLTestCase[9]
 	t.Run(errorCase.Name, func(t *testing.T) {
 		_, err := utils.GenerateURL(errorCase.ChainId, errorCase.Address)
-		fmt.Println(err)
 
 		assert.ErrorIs(t, err, utils.ErrChainNotFound)
 	})

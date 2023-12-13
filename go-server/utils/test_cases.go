@@ -63,7 +63,7 @@ var GenerateURLTestCase = []generateUrltestCase{
 		Expected: "https://arbiscan.io/address/0x980306e668Fa1E4246e2AC86e06e12B67A5fD087#code",
 	},
 	{
-		Name:     "chain id not found",
+		Name:     "error chain id not found",
 		ChainId:  0,
 		Address:  "0x980306e668Fa1E4246e2AC86e06e12B67A5fD087",
 		Expected: "chain id not found",

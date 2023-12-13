@@ -25,5 +25,10 @@ func (h abiHandler) GetAbi(c *fiber.Ctx) error {
 		})
 	}
 
-	return  c.Status(fiber.StatusOK).JSON(abiJson)
+	response := fiber.Map{
+		"message": "fetch abi successfully",
+		"abi": abiJson,
+	}
+
+	return  c.Status(fiber.StatusOK).JSON(response)
 } 
